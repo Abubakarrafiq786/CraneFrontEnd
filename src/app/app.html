@@ -1,0 +1,38 @@
+<div class="app-layout">
+  <!-- Fixed Left Sidebar (Dark Navy Blue) -->
+  <app-sidebar (openAbout)="showAboutModal = true"></app-sidebar>
+
+  <!-- Main Content Area (Light Gray Background, Scrollable) -->
+  <main class="main-content">
+    <!-- Top Header Bar -->
+    <app-header></app-header>
+
+    <div class="content-body">
+      <!-- Main Content Top Section: Split into Two Columns -->
+      <section class="top-section">
+        <!-- Left Column: Crane Parameters Form Card -->
+        <div class="column-left">
+          <app-crane-parameters></app-crane-parameters>
+        </div>
+
+        <!-- Right Column: Drawing Preview Card with Status Badge -->
+        <div class="column-right">
+          <app-drawing-preview></app-drawing-preview>
+        </div>
+      </section>
+
+      <!-- Main Content Bottom Section: Saved Designs Table -->
+      <section class="bottom-section">
+        <app-saved-designs></app-saved-designs>
+      </section>
+    </div>
+  </main>
+
+  <!-- Global Toast Notification System -->
+  <app-toast></app-toast>
+
+  <!-- About & System Architecture Modal -->
+  @if (showAboutModal) {
+    <app-about-modal (close)="showAboutModal = false"></app-about-modal>
+  }
+</div>

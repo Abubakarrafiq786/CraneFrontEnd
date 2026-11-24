@@ -1,0 +1,61 @@
+/* Global CSS & Variables for Parametric Overhead Crane Generator */
+:root {
+  --font-family-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --color-primary: #1a73e8;
+  --color-primary-dark: #1557b0;
+  --color-secondary: #0284c7;
+  --color-secondary-dark: #0369a1;
+  --color-success: #15803d;
+  --color-danger: #ef4444;
+  --color-sidebar-bg: #0d1e38;
+  --color-card-header: #1e2e4a;
+  --color-body-bg: #f1f5f9;
+  --color-border: #e2e8f0;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  font-family: var(--font-family-sans);
+  background-color: var(--color-body-bg);
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Base Card & UI Utilities */
+.card {
+  background: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  border: 1px solid #e2e8f0;
+}
+
+/* Interactive SVG Styling */
+.crane-cad-svg text {
+  user-select: none;
+}
