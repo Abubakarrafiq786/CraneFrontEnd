@@ -11,7 +11,6 @@ import { SvgDrawingRendererComponent } from './svg-drawing-renderer.component';
     <div class="card preview-card">
       <div class="card-header">
         <div class="header-left">
-          <!-- Image/Preview icon -->
           <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
             <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -26,18 +25,22 @@ import { SvgDrawingRendererComponent } from './svg-drawing-renderer.component';
               <span class="spinner-dot"></span>
               Generating Drawing...
             </span>
-          } @else if (craneService.isValidDesign()) {
+          } @else if (craneService.hasActiveDrawing() && craneService.isValidDesign()) {
             <span class="status-badge valid">
-              <!-- Green Check Icon -->
               <svg class="badge-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="20 6 9 17 4 12"/>
               </svg>
               Valid design / Generated
             </span>
-          } @else {
+          } @else if (craneService.hasActiveDrawing()) {
             <span class="status-badge draft">
               <span class="draft-dot"></span>
               Draft / Parameters Modified
+            </span>
+          } @else {
+            <span class="status-badge idle">
+              <span class="idle-dot"></span>
+              Ready / Waiting for Input
             </span>
           }
         </div>
@@ -50,10 +53,35 @@ import { SvgDrawingRendererComponent } from './svg-drawing-renderer.component';
             <span>Generating CAD Drawing Model...</span>
           </div>
         }
-        <app-svg-drawing-renderer
-          [rawSvgString]="craneService.svgContent()"
-          [model]="craneService.drawingModel()"
-        ></app-svg-drawing-renderer>
+
+        @if (craneService.hasActiveDrawing()) {
+          <app-svg-drawing-renderer
+            [rawSvgString]="craneService.svgContent()"
+            [model]="craneService.drawingModel()"
+          ></app-svg-drawing-renderer>
+        } @else {
+          <!-- Placeholder State with Preview Icon when cleared or new design -->
+          <div class="preview-placeholder">
+            <div class="placeholder-icon-circle">
+              <!-- Technical CAD Blueprint Drawing Icon -->
+              <svg class="placeholder-icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="2">
+                <!-- Crane Outline Icon -->
+                <rect x="6" y="16" width="52" height="6" rx="1" fill="#e2e8f0" stroke="#0284c7"/>
+                <line x1="12" y1="22" x2="12" y2="52" stroke="#64748b" stroke-width="3"/>
+                <line x1="52" y1="22" x2="52" y2="52" stroke="#64748b" stroke-width="3"/>
+                <rect x="26" y="12" width="12" height="6" rx="1" fill="#0284c7" stroke="#0369a1"/>
+                <line x1="32" y1="18" x2="32" y2="34" stroke="#475569" stroke-width="2"/>
+                <circle cx="32" cy="37" r="3" stroke="#0f172a" stroke-width="2"/>
+                <path d="M32 40 C30 44 26 46 29 49 C32 51 35 48 34 45" fill="none" stroke="#0f172a" stroke-width="2"/>
+                <line x1="6" y1="52" x2="58" y2="52" stroke="#334155" stroke-width="2"/>
+              </svg>
+            </div>
+            <h4 class="placeholder-title">CAD Drawing Preview Area</h4>
+            <p class="placeholder-desc">
+              Select any design from the <strong>Saved Designs</strong> table below and click <strong>Preview</strong>, or enter parameters on the left and click <strong>Validate &amp; Generate</strong>.
+            </p>
+          </div>
+        }
       </div>
     </div>
   `,
@@ -124,9 +152,28 @@ import { SvgDrawingRendererComponent } from './svg-drawing-renderer.component';
       color: #ffffff;
     }
 
+    .status-badge.idle {
+      background-color: #475569;
+      color: #e2e8f0;
+    }
+
     .badge-icon {
       width: 0.85rem;
       height: 0.85rem;
+    }
+
+    .idle-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #94a3b8;
+    }
+
+    .draft-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #ffffff;
     }
 
     .card-body {
@@ -139,10 +186,57 @@ import { SvgDrawingRendererComponent } from './svg-drawing-renderer.component';
       min-height: 480px;
     }
 
+    .preview-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 3rem 1.5rem;
+      flex: 1;
+      background-color: #f8fafc;
+      border: 2px dashed #cbd5e1;
+      border-radius: 6px;
+      margin: 0.5rem;
+    }
+
+    .placeholder-icon-circle {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background-color: #eff6ff;
+      border: 1px solid #bfdbfe;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.25rem;
+    }
+
+    .placeholder-icon {
+      width: 48px;
+      height: 48px;
+      color: #0284c7;
+    }
+
+    .placeholder-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin: 0 0 0.5rem;
+    }
+
+    .placeholder-desc {
+      font-size: 0.88rem;
+      color: #64748b;
+      max-width: 420px;
+      line-height: 1.5;
+      margin: 0;
+    }
+
     .loading-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(255, 255, 255, 0.82);
+      background: rgba(255, 255, 255, 0.85);
       display: flex;
       flex-direction: column;
       align-items: center;

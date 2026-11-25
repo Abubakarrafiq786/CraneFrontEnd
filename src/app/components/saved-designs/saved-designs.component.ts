@@ -10,14 +10,17 @@ import { CraneService } from '../../core/services/crane.service';
   template: `
     <div class="card saved-designs-card">
       <div class="card-header">
-        <span class="card-title">Saved Designs</span>
+        <div class="header-left">
+          <span class="card-title">Saved Designs</span>
+          <span class="count-badge">{{ craneService.savedDesigns().length }}</span>
+        </div>
+
         <button
           type="button"
           class="btn-refresh"
           (click)="onRefresh()"
           [disabled]="craneService.isLoading()"
         >
-          <!-- Refresh icon -->
           <svg
             class="refresh-icon"
             [class.spinning]="craneService.isLoading()"
@@ -57,25 +60,26 @@ import { CraneService } from '../../core/services/crane.service';
                   <td class="col-date text-muted">{{ item.createdOn || '26/04/2025 14:30' }}</td>
                   <td class="col-actions">
                     <div class="action-buttons">
-                      <!-- Open Button (Blue) -->
+                      <!-- Preview Button (Loads in preview section as requested) -->
                       <button
                         type="button"
-                        class="btn-action btn-open"
-                        (click)="onOpenDesign(item)"
-                        title="Open and view design"
+                        class="btn-action btn-preview"
+                        (click)="onPreviewDesign(item)"
+                        title="Preview CAD drawing in preview area"
                       >
                         <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                          <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                          <circle cx="12" cy="12" r="3"/>
                         </svg>
-                        Open
+                        Preview
                       </button>
 
-                      <!-- Edit Button (Light Blue) -->
+                      <!-- Edit Button -->
                       <button
                         type="button"
                         class="btn-action btn-edit"
                         (click)="onEditDesign(item)"
-                        title="Edit design parameters"
+                        title="Edit design parameters in form"
                       >
                         <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                           <path d="M12 20h9"/>
@@ -84,7 +88,22 @@ import { CraneService } from '../../core/services/crane.service';
                         Edit
                       </button>
 
-                      <!-- Delete Button (Red) -->
+                      <!-- Download PDF Button directly in list (as requested) -->
+                      <button
+                        type="button"
+                        class="btn-action btn-pdf"
+                        (click)="onDownloadPdf(item)"
+                        title="Download engineering PDF drawing"
+                      >
+                        <svg class="action-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                          <polyline points="7 10 12 15 17 10"/>
+                          <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
+                        PDF
+                      </button>
+
+                      <!-- Delete Button -->
                       <button
                         type="button"
                         class="btn-action btn-delete"
@@ -133,10 +152,25 @@ import { CraneService } from '../../core/services/crane.service';
       min-height: 48px;
     }
 
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
     .card-title {
       font-size: 0.95rem;
       font-weight: 600;
       letter-spacing: 0.2px;
+    }
+
+    .count-badge {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
     }
 
     .btn-refresh {
@@ -263,29 +297,34 @@ import { CraneService } from '../../core/services/crane.service';
       height: 0.85rem;
     }
 
-    /* Open Button */
-    .btn-open {
-      background-color: #2563eb;
+    /* Preview Button (Blue) */
+    .btn-preview {
+      background-color: #1a73e8;
+    }
+    .btn-preview:hover {
+      background-color: #1557b0;
     }
 
-    .btn-open:hover {
-      background-color: #1d4ed8;
-    }
-
-    /* Edit Button */
+    /* Edit Button (Cyan/Sky) */
     .btn-edit {
       background-color: #0284c7;
     }
-
     .btn-edit:hover {
       background-color: #0369a1;
     }
 
-    /* Delete Button */
+    /* PDF Button (Indigo/Purple) */
+    .btn-pdf {
+      background-color: #7c3aed;
+    }
+    .btn-pdf:hover {
+      background-color: #6d28d9;
+    }
+
+    /* Delete Button (Red) */
     .btn-delete {
       background-color: #ef4444;
     }
-
     .btn-delete:hover {
       background-color: #dc2626;
     }
@@ -309,24 +348,20 @@ export class SavedDesignsComponent {
     this.craneService.loadSavedDesigns();
   }
 
-  onOpenDesign(design: DesignDto): void {
-    this.craneService.selectDesign(design);
-    this.craneService.generateDrawing(design.id, {
-      designName: design.designName,
-      craneType: design.craneType,
-      capacityTonnes: design.capacityTonnes,
-      spanMm: design.spanMm,
-      liftHeightMm: design.liftHeightMm,
-      runwayWidthMm: design.runwayWidthMm,
-      hoistPositionMm: design.hoistPositionMm,
-      buildingHeightMm: design.buildingHeightMm
-    }).subscribe();
+  onPreviewDesign(design: DesignDto): void {
+    this.craneService.previewDesign(design);
+    // Scroll to drawing preview area on smaller screens
+    const previewEl = document.querySelector('.preview-card');
+    previewEl?.scrollIntoView({ behavior: 'smooth' });
   }
 
   onEditDesign(design: DesignDto): void {
     this.craneService.selectDesign(design);
-    // Smooth scroll to parameters card on smaller screens
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  onDownloadPdf(design: DesignDto): void {
+    this.craneService.downloadPdf(design.id, design.designName, design);
   }
 
   onDeleteDesign(design: DesignDto): void {

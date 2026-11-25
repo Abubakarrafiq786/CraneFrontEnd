@@ -1,7 +1,7 @@
 import { CommonModule } from '@angular/common';
 import { Component, effect, inject } from '@angular/core';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
-import { CRANE_TYPES } from '../../core/models/crane.models';
+import { CRANE_TYPES, CreateDesignRequest } from '../../core/models/crane.models';
 import { CraneService } from '../../core/services/crane.service';
 import { ToastService } from '../../core/services/toast.service';
 
@@ -13,12 +13,27 @@ import { ToastService } from '../../core/services/toast.service';
     <div class="card params-card">
       <div class="card-header">
         <div class="header-left">
-          <!-- Pencil/Edit icon -->
           <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 20h9"/>
             <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
           </svg>
           <span class="card-title">Crane Parameters</span>
+          @if (craneService.currentDesignId(); as id) {
+            <span class="edit-badge">Editing #{{ id }}</span>
+          } @else {
+            <span class="new-badge">New Design</span>
+          }
+        </div>
+
+        <div class="header-right">
+          <button
+            type="button"
+            class="btn-clear-header"
+            (click)="onClearForm()"
+            title="Clear all fields"
+          >
+            Clear Fields
+          </button>
         </div>
       </div>
 
@@ -68,9 +83,10 @@ import { ToastService } from '../../core/services/toast.service';
                 id="capacityTonnes"
                 type="number"
                 step="0.5"
-                min="0.5"
+                min="0.1"
                 class="form-control"
                 formControlName="capacityTonnes"
+                placeholder="10"
               />
               <span class="unit-badge">t</span>
               @if (isFieldInvalid('capacityTonnes')) {
@@ -92,6 +108,7 @@ import { ToastService } from '../../core/services/toast.service';
                 min="1000"
                 class="form-control"
                 formControlName="spanMm"
+                placeholder="25000"
               />
               <span class="unit-badge">mm</span>
               @if (isFieldInvalid('spanMm')) {
@@ -113,6 +130,7 @@ import { ToastService } from '../../core/services/toast.service';
                 min="1000"
                 class="form-control"
                 formControlName="liftHeightMm"
+                placeholder="8000"
               />
               <span class="unit-badge">mm</span>
               @if (isFieldInvalid('liftHeightMm')) {
@@ -134,6 +152,7 @@ import { ToastService } from '../../core/services/toast.service';
                 min="1000"
                 class="form-control"
                 formControlName="runwayWidthMm"
+                placeholder="12500"
               />
               <span class="unit-badge">mm</span>
               @if (isFieldInvalid('runwayWidthMm')) {
@@ -152,9 +171,10 @@ import { ToastService } from '../../core/services/toast.service';
                 id="hoistPositionMm"
                 type="number"
                 step="100"
-                min="500"
+                min="100"
                 class="form-control"
                 formControlName="hoistPositionMm"
+                placeholder="12500"
               />
               <span class="unit-badge">mm</span>
               @if (isFieldInvalid('hoistPositionMm')) {
@@ -176,6 +196,7 @@ import { ToastService } from '../../core/services/toast.service';
                 min="1000"
                 class="form-control"
                 formControlName="buildingHeightMm"
+                placeholder="9000"
               />
               <span class="unit-badge">mm</span>
               @if (isFieldInvalid('buildingHeightMm')) {
@@ -210,7 +231,7 @@ import { ToastService } from '../../core/services/toast.service';
                 <polyline points="17 21 17 13 7 13 7 21"/>
                 <polyline points="7 3 7 8 15 8"/>
               </svg>
-              Save Design
+              {{ craneService.currentDesignId() ? 'Update Design' : 'Save Design' }}
             </button>
 
             <!-- Download PDF -->
@@ -269,6 +290,40 @@ import { ToastService } from '../../core/services/toast.service';
       font-size: 0.95rem;
       font-weight: 600;
       letter-spacing: 0.2px;
+    }
+
+    .edit-badge {
+      background: #0284c7;
+      color: #ffffff;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .new-badge {
+      background: #10b981;
+      color: #ffffff;
+      font-size: 0.72rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    .btn-clear-header {
+      background: rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #e2e8f0;
+      font-size: 0.75rem;
+      padding: 0.25rem 0.6rem;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .btn-clear-header:hover {
+      background: rgba(255, 255, 255, 0.22);
+      color: #ffffff;
     }
 
     .card-body {
@@ -494,12 +549,15 @@ export class CraneParametersComponent {
       const vals = this.craneService.currentFormValues();
       if (vals) {
         this.paramForm.patchValue(vals, { emitEvent: false });
+      } else {
+        // If currentFormValues is set to null (e.g. from New Design), clear fields
+        this.clearFormFields();
       }
     });
 
     // Mark drawing as draft when user alters parameters
-    this.paramForm.valueChanges.subscribe(vals => {
-      if (this.paramForm.valid) {
+    this.paramForm.valueChanges.subscribe(() => {
+      if (this.paramForm.valid && this.craneService.hasActiveDrawing()) {
         this.craneService.isValidDesign.set(false);
       }
     });
@@ -510,51 +568,105 @@ export class CraneParametersComponent {
     return !!(ctrl && ctrl.invalid && (ctrl.dirty || ctrl.touched));
   }
 
+  onClearForm(): void {
+    this.clearFormFields();
+    this.craneService.currentDesignId.set(null);
+    this.craneService.clearDrawing();
+  }
+
+  private clearFormFields(): void {
+    this.paramForm.reset({
+      designName: '',
+      craneType: 'EOT Crane',
+      capacityTonnes: null,
+      spanMm: null,
+      liftHeightMm: null,
+      runwayWidthMm: null,
+      hoistPositionMm: null,
+      buildingHeightMm: null
+    });
+    this.paramForm.markAsPristine();
+    this.paramForm.markAsUntouched();
+  }
+
   onValidateAndGenerate(): void {
     if (this.paramForm.invalid) {
       this.paramForm.markAllAsTouched();
-      this.toast.error('Please resolve all validation errors in the form before generating.', 'Form Invalid');
+      this.toast.error('Please enter all required crane parameters before generating.', 'Form Invalid');
       return;
     }
 
-    const formValues = this.paramForm.value;
+    const formValues: CreateDesignRequest = {
+      designName: this.paramForm.value.designName,
+      craneType: this.paramForm.value.craneType,
+      capacityTonnes: Number(this.paramForm.value.capacityTonnes),
+      spanMm: Number(this.paramForm.value.spanMm),
+      liftHeightMm: Number(this.paramForm.value.liftHeightMm),
+      runwayWidthMm: Number(this.paramForm.value.runwayWidthMm),
+      hoistPositionMm: Number(this.paramForm.value.hoistPositionMm),
+      buildingHeightMm: Number(this.paramForm.value.buildingHeightMm)
+    };
 
-    // Cross-field validation checks
     if (formValues.hoistPositionMm > formValues.spanMm) {
       this.toast.warning('Hoist Position cannot exceed the Crane Span.', 'Validation Warning');
       return;
     }
 
     if (formValues.liftHeightMm >= formValues.buildingHeightMm) {
-      this.toast.warning('Lift Height must be less than Building Height to clear roof structures.', 'Validation Warning');
+      this.toast.warning('Lift Height must be less than Building Height.', 'Validation Warning');
       return;
     }
 
     this.craneService.currentFormValues.set(formValues);
-    const id = this.craneService.currentDesignId() || 1;
+    const id = this.craneService.currentDesignId();
     this.craneService.generateDrawing(id, formValues).subscribe();
   }
 
   onSaveDesign(): void {
     if (this.paramForm.invalid) {
       this.paramForm.markAllAsTouched();
-      this.toast.error('Please enter valid crane parameters before saving.', 'Cannot Save');
+      this.toast.error('Please fill in all required parameters before saving.', 'Cannot Save');
       return;
     }
 
-    const formValues = this.paramForm.value;
+    const formValues: CreateDesignRequest = {
+      designName: this.paramForm.value.designName,
+      craneType: this.paramForm.value.craneType,
+      capacityTonnes: Number(this.paramForm.value.capacityTonnes),
+      spanMm: Number(this.paramForm.value.spanMm),
+      liftHeightMm: Number(this.paramForm.value.liftHeightMm),
+      runwayWidthMm: Number(this.paramForm.value.runwayWidthMm),
+      hoistPositionMm: Number(this.paramForm.value.hoistPositionMm),
+      buildingHeightMm: Number(this.paramForm.value.buildingHeightMm)
+    };
+
     const currentId = this.craneService.currentDesignId();
 
     if (currentId && this.craneService.savedDesigns().some(d => d.id === currentId)) {
-      this.craneService.updateDesign(currentId, formValues).subscribe();
+      // Update existing record
+      this.craneService.updateDesign(currentId, formValues).subscribe({
+        next: () => {
+          this.craneService.currentDesignId.set(null);
+          this.clearFormFields();
+          this.craneService.clearDrawing();
+        }
+      });
     } else {
-      this.craneService.createDesign(formValues).subscribe();
+      // Create new record
+      this.craneService.createDesign(formValues).subscribe({
+        next: () => {
+          // Clear the form fields after adding an item, as requested!
+          this.clearFormFields();
+          this.craneService.clearDrawing();
+        }
+      });
     }
   }
 
   onDownloadPdf(): void {
-    const id = this.craneService.currentDesignId() || 1;
+    const id = this.craneService.currentDesignId();
     const name = this.paramForm.get('designName')?.value || 'Workshop-Crane';
-    this.craneService.downloadPdf(id, name);
+    const formVals = this.paramForm.valid ? this.paramForm.value : undefined;
+    this.craneService.downloadPdf(id, name, formVals);
   }
 }
